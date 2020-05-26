@@ -1,22 +1,20 @@
 package com.koval.resolver.connector.bugzilla.client;
 
-import java.net.MalformedURLException;
-import java.net.URL;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import b4j.core.DefaultIssue;
+import b4j.core.session.BugzillaHttpSession;
+import b4j.util.HttpSessionParams;
 import com.koval.resolver.common.api.auth.Credentials;
 import com.koval.resolver.common.api.component.connector.IssueClient;
 import com.koval.resolver.common.api.component.connector.IssueClientFactory;
 import com.koval.resolver.common.api.configuration.bean.connectors.BugzillaConnectorConfiguration;
 import com.koval.resolver.connector.bugzilla.exception.BugzillaConnectorException;
-
-import b4j.core.DefaultIssue;
-import b4j.core.session.BugzillaHttpSession;
-import b4j.util.HttpSessionParams;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rs.baselib.security.AuthorizationCallback;
 import rs.baselib.security.SimpleAuthorizationCallback;
+
+import java.net.MalformedURLException;
+import java.net.URL;
 
 
 public class BugzillaIssueClientFactory implements IssueClientFactory {
@@ -26,12 +24,12 @@ public class BugzillaIssueClientFactory implements IssueClientFactory {
   private final String host;
   private final Credentials credentials;
 
-  public BugzillaIssueClientFactory(final BugzillaConnectorConfiguration connectorConfiguration) {
-    host = connectorConfiguration.getUrl();
-    if (connectorConfiguration.isAnonymous()) {
-      credentials = null;
+  public BugzillaIssueClientFactory(BugzillaConnectorConfiguration connectorConfiguration) {
+ host = connectorConfiguration.getUrl();
+    if (!connectorConfiguration.isAnonymous()) {
+ credentials = Credentials.getCredentials(connectorConfiguration.getCredentialsFolder());
     } else {
-      credentials = Credentials.getCredentials(connectorConfiguration.getCredentialsFolder());
+ credentials = null;
     }
   }
 
@@ -46,20 +44,20 @@ public class BugzillaIssueClientFactory implements IssueClientFactory {
 
   private IssueClient getAnonymousClient() throws BugzillaConnectorException {
     LOGGER.info("Creating BugZilla client with Anonymous authentication...");
-    final BugzillaHttpSession session = new BugzillaHttpSession();
-    session.setBaseUrl(getURL(host));
-    session.setBugzillaBugClass(DefaultIssue.class);
+    BugzillaHttpSession session = new BugzillaHttpSession();
+ session.setBaseUrl(getURL(host));
+ session.setBugzillaBugClass(DefaultIssue.class);
     return new BugzillaIssueClient(session);
   }
-
+  
   private IssueClient getBasicClient() throws BugzillaConnectorException {
     if (credentials == null) {
       throw new IllegalStateException("Credentials were not provided, impossible to create basic Bugzilla client");
     }
 
     LOGGER.info("Creating BugZilla client with Basic authentication...");
-    final BugzillaHttpSession session = new BugzillaHttpSession();
-    session.setBaseUrl(getURL(host));
+    BugzillaHttpSession session = new BugzillaHttpSession();
+ session.setBaseUrl(getURL(host));
     session.setBugzillaBugClass(DefaultIssue.class);
 
     final AuthorizationCallback authCallback = new SimpleAuthorizationCallback(credentials.getUsername(), credentials.getPassword());
